@@ -21,9 +21,10 @@ def messages():
         return make_response(messages, 200)
     
     if request.method == 'POST':
+        data = request.get_json()
         new_message = Message(
-            body=request.form.get("body"),
-            username=request.form.get("username")
+            body=data["body"],
+            username=data["username"]
         )
 
         db.session.add(new_message)
@@ -33,9 +34,31 @@ def messages():
 
         return make_response(message_dict, 201)
 
-@app.route('/messages/<int:id>')
+
+@app.route('/messages/<int:id>', methods = ['PATCH', 'DELETE'])
 def messages_by_id(id):
-    return ''
+    message = Message.query.filter_by(id=id).first()
+    if request.method == 'PATCH':
+        data = request.get_json()
+        for attr in data:
+            setattr(message, attr, data[attr])
+
+        db.session.add(message)
+        db.session.commit()
+
+        return make_response(message.to_dict(), 200)
+
+    elif request.method == 'DELETE':
+        db.session.delete(message)
+        db.session.commit()
+
+        r_body = {
+            "delete successful": True,
+            "message": "Review deleted."
+        }
+
+        return make_response(r_body, 200)
 
 if __name__ == '__main__':
     app.run(port=5555)
+ 
